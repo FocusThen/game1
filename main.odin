@@ -1,5 +1,6 @@
 package main
 
+import "core:fmt"
 import rl "vendor:raylib"
 
 
@@ -30,6 +31,14 @@ Entities: struct {
 	player_frame:       int,
 	player_frame_count: int,
 	player_speed:       f32,
+
+	//tile map
+	tile_dest:          rl.Rectangle,
+	tile_src:           rl.Rectangle,
+	tile_map:           [dynamic]int,
+	src_map:            [dynamic]string,
+	map_w:              int,
+	map_h:              int,
 }
 
 game := Game
@@ -48,7 +57,7 @@ game_init :: proc() {
 			f32(game_entities.player_dest.y - (game_entities.player_dest.height / 2)),
 		},
 		0,
-		1,
+		2,
 	}
 
 	game_entities.grass_sprite = rl.LoadTexture("./assets/Tilesets/Grass.png")
@@ -64,6 +73,17 @@ game_init :: proc() {
 	game_entities.player_dest = rl.Rectangle{200, 200, 100, 100}
 	game_entities.player_speed = 3
 
+	game_entities.tile_dest = rl.Rectangle{0, 0, 16, 16}
+	game_entities.tile_src = rl.Rectangle{0, 0, 16, 16}
+	load_map()
+}
+
+load_map :: proc() {
+	game_entities.map_w = 5
+	game_entities.map_h = 5
+	for i := 0; i < (game_entities.map_h * game_entities.map_w); i += 1 {
+		append(&game_entities.tile_map, i)
+	}
 }
 
 game_update :: proc() {
@@ -119,7 +139,38 @@ game_update :: proc() {
 }
 
 draw_scene :: proc() {
-	rl.DrawTexture(game_entities.grass_sprite, 100, 50, rl.WHITE)
+	//rl.DrawTexture(game_entities.grass_sprite, 100, 50, rl.WHITE)
+
+	for i := 0; i < len(game_entities.tile_map); i += 1 {
+		if game_entities.tile_map[i] != 0 {
+			game_entities.tile_dest.x =
+				game_entities.tile_dest.width * f32(i % game_entities.map_w)
+			game_entities.tile_dest.y =
+				game_entities.tile_dest.height * f32(i / game_entities.map_w)
+
+			game_entities.tile_src.x =
+				game_entities.tile_src.width *
+				f32(
+					(game_entities.tile_map[i] - 1) %
+					int(game_entities.grass_sprite.width / i32(game_entities.tile_src.width)),
+				)
+			game_entities.tile_src.y =
+				game_entities.tile_src.height *
+				f32(
+					(game_entities.tile_map[i] - 1) /
+					int(game_entities.grass_sprite.width / i32(game_entities.tile_src.width)),
+				)
+
+			rl.DrawTexturePro(
+				game_entities.grass_sprite,
+				game_entities.tile_src,
+				game_entities.tile_dest,
+				rl.Vector2{game_entities.tile_dest.width, game_entities.tile_dest.height},
+				0,
+				rl.WHITE,
+			)
+		}
+	}
 
 	rl.DrawTexturePro(
 		game_entities.player_sprite,
